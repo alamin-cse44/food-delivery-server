@@ -1,19 +1,21 @@
 const express = require('express');
+require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 const app = express();
 
+const port = process.env.PORT || 5000;
+
 app.use(cors()); 
 app.use(express.json()); // string er data json e convert kore post er jonno available rakhbe
 
-const port = process.env.PORT || 5000;
 
-// user : foodMaster
-// password : brOOnhzmP4XQNavA
-
+// user : foodMaster || ${process.env.DB_USER}
+// password : brOOnhzmP4XQNavA || ${process.env.DB_PASS}
 
 
-const uri = "mongodb+srv://foodMaster:brOOnhzmP4XQNavA@cluster0.ezng0.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ezng0.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
@@ -22,18 +24,26 @@ async function run() {
   try {
     await client.connect();
     const database = client.db("foodDelivery");
-    const usersCollection = database.collection("users");
     const foodsCollection = database.collection("foods");
-    // create a document to insert
-    const doc = {
-      name: "Kacchi",
-      price: 420,
-      description: "The food is tasty, You can try!",
-    }
-    const result = await foodsCollection.insertOne(doc);
-    console.log(`A document was inserted with the _id: ${result.insertedId}`);
+
+    // -------------  Food Adding Start -----------
+    // POST FOR ADD FOODS
+    app.post('/foods', async (req, res) => {
+      const newFood = req.body;
+      const result = await foodsCollection.insertOne(newFood);
+      console.log('added food', result);
+      res.json(result);
+    });
+
+    // GET FOR FOODS
+    app.get('/foods', async (req, res) => {
+      const cursor = foodsCollection.find({});
+      const foods = await cursor.toArray();
+      res.send(foods);
+    })
+    
   } finally {
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
