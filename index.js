@@ -3,6 +3,7 @@ require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const cors = require('cors');
 const app = express();
+const ObjectId = require('mongodb').ObjectId;
 
 const port = process.env.PORT || 5000;
 
@@ -40,6 +41,45 @@ async function run() {
       const cursor = foodsCollection.find({});
       const foods = await cursor.toArray();
       res.send(foods);
+    })
+
+    // DELETE A FOODS
+    app.delete('/foods/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await foodsCollection.deleteOne(query);
+      console.log('deleting foods with id ', result);
+      res.json(result);
+    })
+
+    // GET single product
+    app.get('/foods/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await foodsCollection.findOne(query);
+      console.log('loaded product', id);
+      res.send(result);
+    })
+
+    // PUT Update product
+    app.put('/foods/:id', async(req, res) => {
+      const id = req.params.id;
+      const updatedProduct = req.body;
+      const filter = {_id:ObjectId(id)};
+      const options = { upsert:true };
+      const updateDoc = {
+          $set: {
+              name: updatedProduct.foodName,
+              category: updatedProduct.category,
+              description: updatedProduct.description,
+              price: updatedProduct.price,
+              img: updatedProduct.img
+          },
+      };
+      const result = await foodsCollection.updateOne(filter,updateDoc, options);
+      console.log('updating service', id);
+      console.log('got update product', req.body);
+      res.json(result);
     })
     
   } finally {
